@@ -63,6 +63,41 @@ cmd521_terraform/
 | web | ingress | 22 | 0.0.0.0/0 | SSH access |
 | web | egress | all | 0.0.0.0/0 | Allow all outbound |
 
+## Accessing the Load Balancer
+
+**Current ALB URL:**
+
+```
+http://mystat-web-alb-1434088430.eu-north-1.elb.amazonaws.com/
+```
+
+Open it in a browser or `curl` — the ALB round-robins between the two nodes,
+so the page alternates between "Основний сайт" (blue) and "Резервний сайт"
+(black/amber).
+
+| Endpoint | URL | Serves |
+|----------|-----|--------|
+| Via ALB (round-robin) | `http://mystat-web-alb-1434088430.eu-north-1.elb.amazonaws.com/` | alternates Main ↔ Backup |
+| Web1 direct | `http://13.48.28.151/` | Основний сайт |
+| Web2 direct | `http://16.171.43.90/` | Резервний сайт |
+
+> **Protocol**: HTTP port 80 only (no HTTPS — no certificate configured).
+> The ALB DNS resolves to 3 AWS IPs (round-robin at DNS level as well).
+
+### How to find the URL later
+
+```bash
+terraform output -raw site_urls      # full URL
+terraform output -raw alb_dns_name   # DNS name only
+```
+
+Or in AWS Console → EC2 → Load Balancers → `mystat-web-alb` → **DNS name**.
+
+> **Note**: instance public IPs are dynamic — after `terraform destroy` /
+> re-`apply` they change. Re-read them with `terraform output -raw instance_ids`
+> and the AWS console, or just keep using the ALB URL (the DNS name stays the
+> same as long as the ALB is not recreated).
+
 ## Quick Start
 
 ```bash
