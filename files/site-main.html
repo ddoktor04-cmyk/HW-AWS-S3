@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MyStat — Основний сайт</title>
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --dark: #0f172a;
+      --muted: #64748b;
+      --bg: #f8fafc;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--dark);
+      line-height: 1.6;
+    }
+    header {
+      background: linear-gradient(135deg, var(--primary), #0b57d0);
+      color: #fff;
+      padding: 48px 24px;
+      text-align: center;
+    }
+    header .badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 999px;
+      padding: 4px 16px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    header h1 { font-size: 42px; margin-bottom: 8px; }
+    header p { font-size: 18px; opacity: 0.9; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+    section {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    section h2 {
+      color: var(--primary);
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+    ul { list-style: none; }
+    ul li {
+      padding: 8px 0 8px 28px;
+      position: relative;
+    }
+    ul li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-weight: bold;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card h3 { color: var(--dark); margin-bottom: 8px; font-size: 18px; }
+    .card p { color: var(--muted); font-size: 15px; }
+    .links a {
+      display: inline-block;
+      margin: 6px 12px 6px 0;
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .links a:hover { text-decoration: underline; }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      padding: 24px;
+      border-top: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge">Основний сайт</div>
+    <h1>MyStat</h1>
+    <p>Сервіс для студентів IT STEP Academy — https://mystat.itstep.org/</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Що таке MyStat?</h2>
+      <p>
+        <strong>MyStat</strong> — це навчальний онлайн-сервіс, розроблений Комп'ютерною
+        Академією IT STEP (<a href="https://itstep.org/" style="color:#1a73e8;">itstep.org</a>).
+        Він дає студенту повний контроль над навчанням: доступ до матеріалів курсу,
+        оцінок, відвідуваності та завдань у будь-який час і з будь-якого пристрою.
+      </p>
+    </section>
+
+    <section>
+      <h2>Можливості кабінету</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Успішність</h3>
+          <p>Оцінки, відвідуваність та прогрес у навчанні в реальному часі.</p>
+        </div>
+        <div class="card">
+          <h3>Завдання</h3>
+          <p>Отримуйте завдання, завантажуйте роботи та отримуйте зворотний зв'язок від викладачів.</p>
+        </div>
+        <div class="card">
+          <h3>Бібліотека</h3>
+          <p>Навчальні матеріали, конспекти та корисні ресурси в одному місці.</p>
+        </div>
+        <div class="card">
+          <h3>Оплата навчання</h3>
+          <p>Прозора історія платежів та можливість оплати онлайн.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Переваги</h2>
+      <ul>
+        <li>Робота з будь-якого пристрою: ПК, планшет або смартфон</li>
+        <li>Мобільний застосунок MyStat для Android та iOS</li>
+        <li>Актуальна інформація про оцінки та розклад</li>
+        <li>Пряме спілкування з викладачами та кураторами</li>
+        <li>Безкоштовний доступ для всіх зарахованих студентів</li>
+      </ul>
+    </section>
+
+    <section class="links">
+      <h2>Посилання</h2>
+      <a href="https://mystat.itstep.org/">mystat.itstep.org</a>
+      <a href="https://mystat.itstep.org/ua/auth/login/">Вхід до кабінету</a>
+      <a href="https://itstep.org/">IT STEP Academy</a>
+    </section>
+  </main>
+
+  <footer>
+    Основний сайт-представник MyStat · Працює через Application Load Balancer ·
+    Instance: <strong id="host">unknown</strong>
+  </footer>
+
+  <script>
+    document.getElementById("host").textContent = window.location.hostname;
+  </script>
+</body>
+</html>
