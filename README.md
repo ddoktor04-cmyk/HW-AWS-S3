@@ -59,7 +59,7 @@ cmd521_terraform/
 |----|-----------|------|--------|-------------|
 | alb | ingress | 80 | 0.0.0.0/0 | HTTP from internet |
 | alb | egress | all | 0.0.0.0/0 | Allow all outbound |
-| web | ingress | 80 | `sg_alb` | HTTP only from ALB |
+| web | ingress | 80 | 0.0.0.0/0 | HTTP (lab: direct + via ALB) |
 | web | ingress | 22 | 0.0.0.0/0 | SSH access |
 | web | egress | all | 0.0.0.0/0 | Allow all outbound |
 
@@ -107,7 +107,7 @@ terraform output -raw site_urls
 - **Secrets**: Stored in `terraform.tfvars` (not committed to git)
 - **Sensitive variables**: Marked with `sensitive = true`
 - **State files**: Ignored by git (`.gitignore`)
-- **Network**: Instances are not directly reachable on port 80 — HTTP goes only through the ALB
+- **Network**: Port 80 on instances is open (lab simplification) — direct IP access works, HTTP also goes through the ALB
 
 ⚠️ **Important**: Never commit `terraform.tfvars` or `*.tfstate` to version control!
 
