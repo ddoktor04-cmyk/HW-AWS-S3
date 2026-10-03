@@ -1,157 +1,107 @@
-# AWS Terraform — ALB + 2 EC2 (MyStat Static Sites)
+# AWS Terraform — Static Website on S3 (pzt.pp.ua)
 
-Infrastructure as Code (IaC) project: an **Application Load Balancer** distributing traffic across **2 EC2 instances** running Apache2 with different static sites about [MyStat](https://mystat.itstep.org/).
+Infrastructure as Code (IaC) project: a **static website hosted on Amazon S3**
+using the S3 Static Website Hosting feature, published at `pzt.pp.ua`
+via a CNAME record.
 
 ## Architecture
 
 ```
-                        ┌─────────────────────────────┐
-                        │   Application Load Balancer │
-       Internet ───────▶│   HTTP :80 (public)         │
-                        └──────────┬──────────────────┘
-                     ┌─────────────┴─────────────┐
-                     ▼                           ▼
-        ┌────────────────────────┐   ┌────────────────────────┐
-        │  EC2 Web1 (main)       │   │  EC2 Web2 (backup)     │
-        │  Основний сайт         │   │  Резервний сайт        │
-        │  13.48.28.151*         │   │  16.171.43.90*         │
-        └────────────────────────┘   └────────────────────────┘
+        Internet
+            |
+            |  HTTP (no certificate — S3 website endpoints are HTTP only)
+            v
+   pzt.pp.ua  ──CNAME──>  hw-pzt-site.s3-website-eu-north-1.amazonaws.com
+                                    |
+                                    v
+                          +---------------------+
+                          |   S3 bucket         |
+                          |   hw-pzt-site       |
+                          |   - index.html      |
+                          |   - public read     |
+                          |   - website config  |
+                          +---------------------+
 ```
 
-\* example IPs — dynamic, see `terraform output`
+- **S3 bucket** stores the site objects (`index.html`)
+- **Bucket policy** allows anonymous `s3:GetObject` (public read)
+- **Website configuration** serves `index.html` for both the index and error documents
+- **CNAME record** `pzt.pp.ua` → S3 website endpoint is added manually at the registrar (pp.ua / nic.ua panel), because Terraform cannot manage DNS outside AWS
+
+> Note: S3 website endpoints support **HTTP only**. For HTTPS a certificate
+> (CloudFront + ACM) would be required — out of scope for this lab.
 
 ## Project Structure
 
 ```
 cmd521_terraform/
-├── main.tf                  # Provider, default VPC data sources, web SG
-├── sg.tf                    # ALB security group
-├── ec2.tf                   # 2 EC2 instances (count = 2)
-├── alb.tf                   # ALB, target group, listener, attachments
-├── vars.tf                  # Variable declarations
-├── outputs.tf               # alb_dns_name, instance_ids, site_urls
+├── main.tf                    # AWS provider
+├── s3.tf                      # Bucket, public access block, policy, website config, object upload
+├── vars.tf                    # Variable declarations (aws_access_key, aws_secret_key, aws_region, bucket_name)
+├── outputs.tf                 # website_endpoint, site_url, cname_name, cname_value
 ├── files/
-│   ├── site-main.html       # "Основний сайт" — served by Web1
-│   ├── site-backup.html     # "Резервний сайт" — served by Web2
-│   └── userdata.tftpl       # user_data template (Apache2 + site content)
-├── terraform.tfvars         # Secrets (not in git)
-├── terraform.tfvars.example # Example variables file
-├── .gitignore               # Git ignore rules
-└── README.md                # This file
+│   └── index.html             # Website content ("Static web сайт на основі сервісу AWS S3")
+├── terraform.tfvars           # Secrets (not in git)
+├── terraform.tfvars.example   # Example variables file
+├── .gitignore                 # Git ignore rules
+└── README.md                  # This file
 ```
 
-## Resources Created
+## Usage
 
-| Resource | Description |
-|----------|-------------|
-| `aws_lb.web` | Public Application Load Balancer (3 default subnets, 2+ AZ) |
-| `aws_lb_target_group.web` | HTTP/80 target group, health check `GET /` → 200 |
-| `aws_lb_listener.http` | Port 80 → forward to target group |
-| `aws_lb_target_group_attachment.web` | Both instances attached |
-| `aws_instance.web[0]` | Web1 — "Основний сайт" (MyStat main page) |
-| `aws_instance.web[1]` | Web2 — "Резервний сайт" (MyStat backup mirror) |
-| `aws_security_group.alb` | ALB SG: HTTP 80 from internet |
-| `aws_security_group.web` | Web SG: HTTP 80 only from ALB SG, SSH 22 |
-
-## Security Group Rules
-
-| SG | Direction | Port | Source | Description |
-|----|-----------|------|--------|-------------|
-| alb | ingress | 80 | 0.0.0.0/0 | HTTP from internet |
-| alb | egress | all | 0.0.0.0/0 | Allow all outbound |
-| web | ingress | 80 | 0.0.0.0/0 | HTTP (lab: direct + via ALB) |
-| web | ingress | 22 | 0.0.0.0/0 | SSH access |
-| web | egress | all | 0.0.0.0/0 | Allow all outbound |
-
-## Accessing the Load Balancer
-
-**Current ALB URL:**
-
-```
-http://mystat-web-alb-1434088430.eu-north-1.elb.amazonaws.com/
-```
-
-Open it in a browser or `curl` — the ALB round-robins between the two nodes,
-so the page alternates between "Основний сайт" (blue) and "Резервний сайт"
-(black/amber).
-
-| Endpoint | URL | Serves |
-|----------|-----|--------|
-| Via ALB (round-robin) | `http://mystat-web-alb-1434088430.eu-north-1.elb.amazonaws.com/` | alternates Main ↔ Backup |
-| Web1 direct | `http://13.48.28.151/` | Основний сайт |
-| Web2 direct | `http://16.171.43.90/` | Резервний сайт |
-
-> **Protocol**: HTTP port 80 only (no HTTPS — no certificate configured).
-> The ALB DNS resolves to 3 AWS IPs (round-robin at DNS level as well).
-
-### How to find the URL later
+### 1. Configure credentials
 
 ```bash
-terraform output -raw site_urls      # full URL
-terraform output -raw alb_dns_name   # DNS name only
+cp terraform.tfvars.example terraform.tfvars
+# edit terraform.tfvars: fill in aws_access_key, aws_secret_key
 ```
 
-Or in AWS Console → EC2 → Load Balancers → `mystat-web-alb` → **DNS name**.
-
-> **Note**: instance public IPs are dynamic — after `terraform destroy` /
-> re-`apply` they change. Re-read them with `terraform output -raw instance_ids`
-> and the AWS console, or just keep using the ALB URL (the DNS name stays the
-> same as long as the ALB is not recreated).
-
-## Quick Start
+### 2. Deploy
 
 ```bash
-cp terraform.tfvars.example terraform.tfvars   # fill in AWS credentials
 terraform init
 terraform plan
 terraform apply
 ```
 
-## Outputs
+### 3. Open the site
 
-| Output | Description |
-|--------|-------------|
-| `alb_dns_name` | DNS name of the load balancer |
-| `site_urls` | Full URL of the load balancer |
-| `instance_ids` | EC2 instance IDs ([0] = main, [1] = backup) |
-| `alb_zone_id` | Route 53 zone ID of the ALB |
+Direct S3 endpoint (available immediately after apply):
 
-## Verify
-
-```bash
-terraform output -raw site_urls
-# Open in browser / curl repeatedly — responses alternate between
-# "Основний сайт" and "Резервний сайт" (round-robin)
+```
+http://hw-pzt-site.s3-website-eu-north-1.amazonaws.com/
 ```
 
-## Variables
+### 4. Attach the domain pzt.pp.ua (manual)
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `aws_access_key` | AWS Access Key ID | - |
-| `aws_secret_key` | AWS Secret Access Key | - |
-| `aws_region` | AWS region | eu-north-1 |
-| `aws_zone` | AWS availability zone | eu-north-1a |
-| `aws_image_id` | Ubuntu AMI ID for EC2 | ami-0aba19e56f3eaec05 |
-| `aws_instance_type` | EC2 instance type (legacy) | t3.small |
-| `aws_instance_type_web` | Web node instance type | t3.micro |
-| `aws_key_name` | Name of SSH key pair | Key1 |
+Run `terraform output` and add a record in the registrar's DNS panel:
 
-## Security
+| Type  | Name       | Value                                             | TTL  |
+|-------|------------|---------------------------------------------------|------|
+| CNAME | `pzt`      | `hw-pzt-site.s3-website-eu-north-1.amazonaws.com` | 3600 |
 
-- **Secrets**: Stored in `terraform.tfvars` (not committed to git)
-- **Sensitive variables**: Marked with `sensitive = true`
-- **State files**: Ignored by git (`.gitignore`)
-- **Network**: Port 80 on instances is open (lab simplification) — direct IP access works, HTTP also goes through the ALB
+> The `pzt` name is relative to the `pp.ua` zone, so the full record is `pzt.pp.ua`.
 
-⚠️ **Important**: Never commit `terraform.tfvars` or `*.tfstate` to version control!
-
-## Cleanup
+### 5. Tear down
 
 ```bash
 terraform destroy
 ```
 
-## License
+## Outputs
 
-This project is for demonstration purposes.
+| Output            | Description                                            |
+|-------------------|--------------------------------------------------------|
+| `bucket_id`       | Bucket name (`hw-pzt-site`)                            |
+| `bucket_arn`      | Bucket ARN                                             |
+| `website_endpoint`| S3 website endpoint hostname                           |
+| `site_url`        | Full HTTP URL of the site                              |
+| `cname_name`      | DNS name to configure (`pzt.pp.ua`)                    |
+| `cname_value`     | CNAME target for the registrar panel                   |
+
+## Security Notes
+
+- `terraform.tfvars` contains AWS credentials and is ignored by git — never commit it
+- The bucket is intentionally **public-read** (required for a static website)
+- No HTTPS-only deny statement: S3 website endpoints are HTTP-only, such a policy would return 403
+- Destroy the lab when not in use: `terraform destroy`

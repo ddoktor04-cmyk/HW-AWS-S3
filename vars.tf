@@ -15,28 +15,8 @@ variable "aws_region" {
   default = "eu-north-1"
 }
 
-variable "aws_zone" {
-  type    = string
-  default = "eu-north-1a"
-}
-
-variable "aws_image_id" {
-  type    = string
-  default = "ami-0aba19e56f3eaec05"
-}
-
-variable "aws_instance_type" {
-  type    = string
-  default = "t3.small"
-}
-
-variable "aws_key_name" {
-  type    = string
-  default = "Key1"
-}
-
-variable "aws_instance_type_web" {
+variable "bucket_name" {
   type        = string
-  description = "Instance type for web nodes behind the ALB"
-  default     = "t3.micro"
+  description = "Globally unique S3 bucket name for the static website"
+  default     = "hw-pzt-site"
 }

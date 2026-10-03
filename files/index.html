@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MyStat — Основний сайт</title>
+  <title>Static web сайт на основі сервісу AWS S3</title>
   <style>
     :root {
       --primary: #1a73e8;
@@ -94,66 +94,67 @@
 </head>
 <body>
   <header>
-    <div class="badge">Основний сайт</div>
-    <h1>MyStat</h1>
-    <p>Сервіс для студентів IT STEP Academy — https://mystat.itstep.org/</p>
+    <div class="badge">AWS S3 · Static Website Hosting</div>
+    <h1>Static Web Site</h1>
+    <p>на основі сервісу AWS S3 · pzt.pp.ua</p>
   </header>
 
   <main>
     <section>
-      <h2>Що таке MyStat?</h2>
+      <h2>Що це?</h2>
       <p>
-        <strong>MyStat</strong> — це навчальний онлайн-сервіс, розроблений Комп'ютерною
-        Академією IT STEP (<a href="https://itstep.org/" style="color:#1a73e8;">itstep.org</a>).
-        Він дає студенту повний контроль над навчанням: доступ до матеріалів курсу,
-        оцінок, відвідуваності та завдань у будь-який час і з будь-якого пристрою.
+        Ця сторінка — <strong>статичний веб-сайт</strong>, розміщений у
+        <strong>Amazon S3</strong> через механізм
+        <em>Static Website Hosting</em>. HTML, CSS та JavaScript віддаються
+        без жодного веб-сервера чи віртуальної машини — лише S3 bucket
+        з увімкненою публічною політикою читання.
       </p>
     </section>
 
     <section>
-      <h2>Можливості кабінету</h2>
+      <h2>Як це працює</h2>
       <div class="grid">
         <div class="card">
-          <h3>Успішність</h3>
-          <p>Оцінки, відвідуваність та прогрес у навчанні в реальному часі.</p>
+          <h3>S3 Bucket</h3>
+          <p>Об'єкти зберігаються в бакеті, доступ до якого відкритий лише на читання (s3:GetObject).</p>
         </div>
         <div class="card">
-          <h3>Завдання</h3>
-          <p>Отримуйте завдання, завантажуйте роботи та отримуйте зворотний зв'язок від викладачів.</p>
+          <h3>Website Endpoint</h3>
+          <p>AWS публікує HTTP-ендпоінт вигляду http://&lt;bucket&gt;.s3-website-eu-north-1.amazonaws.com.</p>
         </div>
         <div class="card">
-          <h3>Бібліотека</h3>
-          <p>Навчальні матеріали, конспекти та корисні ресурси в одному місці.</p>
+          <h3>Index та Error документи</h3>
+          <p>Конфігурація website hosting вказує index.html як головну сторінку та документ помилок.</p>
         </div>
         <div class="card">
-          <h3>Оплата навчання</h3>
-          <p>Прозора історія платежів та можливість оплати онлайн.</p>
+          <h3>Власний домен</h3>
+          <p>Домен pzt.pp.ua прив'язується CNAME-записом до S3 website endpoint.</p>
         </div>
       </div>
     </section>
 
     <section>
-      <h2>Переваги</h2>
+      <h2>Переваги підходу</h2>
       <ul>
-        <li>Робота з будь-якого пристрою: ПК, планшет або смартфон</li>
-        <li>Мобільний застосунок MyStat для Android та iOS</li>
-        <li>Актуальна інформація про оцінки та розклад</li>
-        <li>Пряме спілкування з викладачами та кураторами</li>
-        <li>Безкоштовний доступ для всіх зарахованих студентів</li>
+        <li>Мінімальна вартість: оплата лише за зберігання та запити</li>
+        <li>Не потрібні сервери, ОС чи адміністрування</li>
+        <li>Масштабування «з коробки» — S3 витримує будь-який трафік</li>
+        <li>Інфраструктура описана кодом Terraform (IaC)</li>
+        <li>Весь сайт — це прості файли в бакеті</li>
       </ul>
     </section>
 
     <section class="links">
       <h2>Посилання</h2>
       <a href="https://mystat.itstep.org/">mystat.itstep.org</a>
-      <a href="https://mystat.itstep.org/ua/auth/login/">Вхід до кабінету</a>
       <a href="https://itstep.org/">IT STEP Academy</a>
+      <a href="https://aws.amazon.com/s3/">Amazon S3</a>
     </section>
   </main>
 
   <footer>
-    Основний сайт-представник MyStat · Працює через Application Load Balancer ·
-    Instance: <strong id="host">unknown</strong>
+    Static web сайт на основі сервісу AWS S3 · pzt.pp.ua ·
+    Host: <strong id="host">unknown</strong>
   </footer>
 
   <script>
