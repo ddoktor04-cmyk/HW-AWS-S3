@@ -135,6 +135,59 @@ resource "aws_s3_bucket_policy" "main" {
 }
 ```
 
+## Static Website Hosting (use INSTEAD of the two sections above)
+
+A website bucket needs **public read**, not the HTTPS deny: website endpoints
+are HTTP-only (the deny would return 403) and S3 routes each request by the
+`Host` header — so name the bucket exactly like the domain used in the CNAME
+(`example.com`, not `example-bucket`).
+
+```hcl
+resource "aws_s3_bucket_public_access_block" "site" {
+  bucket = aws_s3_bucket.site.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_policy" "site" {
+  bucket     = aws_s3_bucket.site.id
+  depends_on = [aws_s3_bucket_public_access_block.site]
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.site.arn}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_s3_bucket_website_configuration" "site" {
+  bucket = aws_s3_bucket.site.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
+  }
+
+  depends_on = [aws_s3_bucket_policy.site]
+}
+```
+
+DNS: `CNAME example.com → example.com.s3-website.<region>.amazonaws.com.`
+(trailing dot). No bare-IP access: endpoint IPs rotate and routing is Host-based.
+
 ## Outputs
 
 ```hcl

@@ -127,6 +127,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "main" {
 
 ## Bucket Policy
 
+> ⚠️ The `EnforceHTTPS` deny statement below is for **REST (HTTPS) endpoints
+> only**. Omit it for static website hosting — website endpoints are HTTP-only,
+> the deny would return 403 (see "Static Website Hosting").
+
 ```hcl
 resource "aws_s3_bucket_policy" "main" {
   bucket = aws_s3_bucket.main.id
@@ -154,6 +158,61 @@ resource "aws_s3_bucket_policy" "main" {
 }
 ```
 
+## Static Website Hosting
+
+```hcl
+resource "aws_s3_bucket_website_configuration" "site" {
+  bucket = aws_s3_bucket.site.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
+  }
+}
+```
+
+Requires a **public-read bucket policy** (`s3:GetObject` for `Principal = "*"`),
+otherwise the endpoint returns 403 for every object.
+
+### Custom domain via CNAME — the bucket name MUST equal the domain
+
+S3 website endpoints pick the bucket from the **`Host` header** of the incoming
+request. A browser that opens `http://example.com/` sends `Host: example.com`,
+so S3 looks up a bucket literally named `example.com`.
+
+Verified behaviour (eu-north-1):
+
+| Request | Result |
+|---------|--------|
+| `Host: example.com.s3-website.eu-north-1.amazonaws.com` | 200 |
+| `Host: example.com` (what a CNAME'd browser sends), bucket named differently | **404 NoSuchBucket** |
+| `Host: example.com`, bucket named `example.com` | 200 |
+
+Therefore: **name the bucket exactly like the domain** you point the CNAME at,
+then add `CNAME @ → <bucket>.s3-website.<region>.amazonaws.com.` (trailing dot).
+
+### No access by bare IP address
+
+- The endpoint **IPs are not static** — they rotate between lookups
+  (e.g. `3.5.216.102` → `3.5.218.145` → `3.5.216.71`).
+- `http://<endpoint-ip>/` sends `Host: <ip>` → S3 looks up bucket `<ip>` →
+  AWS error/redirect page instead of the site.
+- Path-style `http://<rest-ip>/<bucket>/index.html` over plain HTTP returns a
+  broken `301` without a usable `Location` header.
+- Serving a site by literal IP requires an **EC2 instance with an Elastic IP**
+  reverse-proxying to the website endpoint (and rewriting `Host`).
+
+### Website endpoint is HTTP-only
+
+- Endpoint format: `http://<bucket>.s3-website.<region>.amazonaws.com`
+  (dashes and dots region formats are both valid; Terraform outputs the dot one).
+- **Do NOT add the `EnforceHTTPS` deny statement** to the bucket policy of a
+  website-hosting bucket — every request would get 403. Keep only public read.
+- HTTPS needs CloudFront + ACM (out of scope for a pure-S3 lab).
+
 ## CORS Configuration
 
 ```hcl
@@ -180,12 +239,16 @@ resource "aws_s3_bucket_cors_configuration" "main" {
 
 ## Gotchas
 
-1. **Naming**: Cannot change bucket name after creation
+1. **Naming**: Cannot change bucket name after creation (replace = destroy + create)
 2. **Region**: Cannot change region after creation
 3. **Force Destroy**: Use `force_destroy = true` only for dev
 4. **Versioning**: Once enabled, can only suspend (not disable)
 5. **Access Logging**: Enable for audit purposes
 6. **Requester Pays**: For buckets shared with other accounts
+7. **Website hosting**: bucket name must equal the CNAME domain — S3 routes
+   website requests by `Host` header (see "Static Website Hosting")
+8. **Website hosting**: no bare-IP access and no HTTPS; public-read policy is
+   mandatory, `aws:SecureTransport` deny breaks the endpoint
 
 ## See Also
 

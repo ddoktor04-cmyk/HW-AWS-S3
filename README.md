@@ -75,11 +75,36 @@ Direct S3 endpoint (available immediately after apply):
 http://hwbarabash1.pp.ua.s3-website.eu-north-1.amazonaws.com/
 ```
 
-### 4. Attach the domain hwbarabash1.pp.ua (manual)
+### 4. Attach the domain hwbarabash1.pp.ua (manual, nic.ua panel)
 
-In the nic.ua panel: **Domains → `hwbarabash1.pp.ua` → gear → NS servers →
-"NIC.UA Name Servers" → Change NS** (parked NS cannot hold custom records).
-Then **Name Servers (NS) → gear → DNS records → Change → Add record**:
+Terraform cannot manage DNS outside AWS, so the domain is connected by hand in
+the [nic.ua](https://nic.ua) panel.
+
+#### Step 1 — Switch to the NIC.UA name servers
+
+1. nic.ua → **Domains** (`Мои домены`) → `hwbarabash1.pp.ua` → **gear icon** →
+   **NS servers** (`NS-серверы`)
+2. Choose **«Серверы имен NIC.UA»** (NIC.UA name servers: `ns1.uadns.com`,
+   `ns2.uadns.com`, `ns3.uadns.com`)
+3. Press **Change NS** (`Изменить NS`)
+
+While the domain sits on the *parked* name servers (`parked1/2.uadns.com`) it
+serves the nic.ua parking page and **ignores the records below** — the NS change
+must come first.
+
+#### Step 2 — Clean up and add the DNS record
+
+Go to **Name Servers (NS) → gear icon → DNS records → Change** and make the zone
+contain **exactly one record** for `@`:
+
+1. **Delete** the parked **A** record for `@` (`135.181.41.169`) — it serves the
+   parking page and would clash with the CNAME.
+2. **Delete** the **MX** record for `@` (`mail.hwbarabash1.pp.ua`) — no email on
+   this domain. A CNAME must not coexist with `A`/`MX` at the same name.
+3. **Delete any duplicate CNAME** for `@`. If the panel answers
+   «Запис такого типу вже існує» (*"a record of this type already exists"*),
+   a second `@` CNAME is already in the list — keep only one.
+4. **Add** (or keep) a single record:
 
 | Type  | Name | Value                                              | TTL  |
 |-------|------|----------------------------------------------------|------|
@@ -87,6 +112,17 @@ Then **Name Servers (NS) → gear → DNS records → Change → Add record**:
 
 > The trailing dot in the value is mandatory (absolute record), otherwise
 > nic.ua appends `hwbarabash1.pp.ua` to it and the record breaks.
+
+Optionally add the same CNAME under `www` (`www.hwbarabash1.pp.ua` is parked the
+same way today). Terraform output `cname_value` always prints the current value.
+
+#### Step 3 — Wait and verify (15 min – 2 h after the NS change)
+
+```powershell
+Resolve-DnsName hwbarabash1.pp.ua -Type NS      # expect ns1-3.uadns.com, NOT parked1/2
+Resolve-DnsName hwbarabash1.pp.ua -Type CNAME   # expect hwbarabash1.pp.ua.s3-website.eu-north-1.amazonaws.com
+curl http://hwbarabash1.pp.ua/                  # expect HTTP 200
+```
 
 ### 5. Tear down
 
