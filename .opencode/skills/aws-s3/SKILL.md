@@ -213,6 +213,28 @@ then add `CNAME @ → <bucket>.s3-website.<region>.amazonaws.com.` (trailing dot
   website-hosting bucket — every request would get 403. Keep only public read.
 - HTTPS needs CloudFront + ACM (out of scope for a pure-S3 lab).
 
+### DNS cutover & browser troubleshooting (custom domain)
+
+All verified in the `hwbarabash1.pp.ua` lab (nic.ua registrar, eu-north-1):
+
+- **Trailing dot — only in the DNS value, never in the browser URL.**
+  The registrar record needs `example.com.s3-website.<region>.amazonaws.com.`
+  (absolute name), but pasting that value *with the dot* into the address bar
+  gives `http://…amazonaws.com./` → **404 NoSuchBucket** (verified).
+- **Always type an explicit `http://`.** Website endpoints have no TLS, and
+  browsers that get a scheme-less hostname try `https://` first →
+  "connection closed" error instead of the site (verified: `https://` to the
+  endpoint times out on :443).
+- **nic.ua name servers**: a domain's zone lives on `ns10/ns11/ns12.uadns.com`;
+  `ns1/ns2/ns3.uadns.com` are the *parent* `pp.ua` zone servers. When checking
+  the delegation, expect `ns10-12`, not `ns1-3`.
+- **Stale resolver cache after the NS/DNS switch**: resolvers keep serving the
+  pre-change A record (e.g. the registrar's parking IP `135.181.41.169`) until
+  its TTL expires — up to a couple of hours, visible as `ping → old IP` while
+  the config is already correct. Diagnose by comparing with public resolvers
+  (`nslookup example.com 8.8.8.8` / `1.1.1.1` → already the new answer).
+  `ipconfig /flushdns` clears only the local Windows cache, not the ISP's.
+
 ## CORS Configuration
 
 ```hcl
