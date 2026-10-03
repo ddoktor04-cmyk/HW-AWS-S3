@@ -84,8 +84,8 @@ the [nic.ua](https://nic.ua) panel.
 
 1. nic.ua → **Domains** (`Мои домены`) → `hwbarabash1.pp.ua` → **gear icon** →
    **NS servers** (`NS-серверы`)
-2. Choose **«Серверы имен NIC.UA»** (NIC.UA name servers: `ns1.uadns.com`,
-   `ns2.uadns.com`, `ns3.uadns.com`)
+2. Choose **«Серверы имен NIC.UA»** (the domain becomes delegated to the NIC.UA
+   name servers `ns10.uadns.com`, `ns11.uadns.com`, `ns12.uadns.com`)
 3. Press **Change NS** (`Изменить NS`)
 
 While the domain sits on the *parked* name servers (`parked1/2.uadns.com`) it
@@ -119,10 +119,22 @@ same way today). Terraform output `cname_value` always prints the current value.
 #### Step 3 — Wait and verify (15 min – 2 h after the NS change)
 
 ```powershell
-Resolve-DnsName hwbarabash1.pp.ua -Type NS      # expect ns1-3.uadns.com, NOT parked1/2
+Resolve-DnsName hwbarabash1.pp.ua -Type NS      # expect ns10-12.uadns.com, NOT parked1/2
 Resolve-DnsName hwbarabash1.pp.ua -Type CNAME   # expect hwbarabash1.pp.ua.s3-website.eu-north-1.amazonaws.com
 curl http://hwbarabash1.pp.ua/                  # expect HTTP 200
 ```
+
+**If ping/browser still go to `135.181.41.169` (the old parking page):**
+
+- Your resolver is serving a **cached old A record** from before the NS switch;
+  it disappears once the TTL expires (up to ~1–2 h). Public resolvers
+  (`8.8.8.8`, `1.1.1.1`) already return the S3 endpoint (`3.5.x.x`).
+- Clear the local Windows cache with `ipconfig /flushdns` (as Administrator) —
+  this does not flush your ISP's cache.
+- Open the site with an **explicit `http://`** — S3 website endpoints have no
+  TLS and browsers try `https://` first.
+- The trailing dot belongs **only** in the DNS record value — never in the
+  browser URL (`http://…amazonaws.com./` returns 404).
 
 ### 5. Tear down
 
