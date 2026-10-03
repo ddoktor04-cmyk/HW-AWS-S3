@@ -4,4 +4,4 @@
 aws_access_key = "AKIA..."
 aws_secret_key = "..."
 aws_region     = "eu-north-1"
-bucket_name    = "hw-pzt-site"
+bucket_name    = "hwbarabash1.pp.ua"

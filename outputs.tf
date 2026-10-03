@@ -24,6 +24,6 @@ output "cname_name" {
 }
 
 output "cname_value" {
-  description = "CNAME target value for the pzt.pp.ua DNS record"
+  description = "CNAME target value for the hwbarabash1.pp.ua DNS record"
   value       = aws_s3_bucket_website_configuration.site.website_endpoint
 }

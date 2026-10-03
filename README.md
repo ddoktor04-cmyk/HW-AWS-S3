@@ -11,12 +11,12 @@ via a CNAME record.
             |
             |  HTTP (no certificate - S3 website endpoints are HTTP only)
             v
- hwbarabash1.pp.ua ──CNAME──> hw-pzt-site.s3-website.eu-north-1.amazonaws.com
+ hwbarabash1.pp.ua ──CNAME──> hwbarabash1.pp.ua.s3-website.eu-north-1.amazonaws.com
                                     |
                                     v
                           +---------------------+
                           |   S3 bucket         |
-                          |   hw-pzt-site       |
+                          |   hwbarabash1.pp.ua |
                           |   - index.html      |
                           |   - public read     |
                           |   - website config  |
@@ -28,6 +28,8 @@ via a CNAME record.
 - **Website configuration** serves `index.html` for both the index and error documents
 - **CNAME record** `hwbarabash1.pp.ua` → S3 website endpoint is added manually in
   the nic.ua panel, because Terraform cannot manage DNS outside AWS
+- **Bucket name = domain name**: S3 picks the bucket from the `Host` header, so
+  the CNAME only works when the bucket is named exactly `hwbarabash1.pp.ua`
 
 > Note: S3 website endpoints support **HTTP only**. For HTTPS a certificate
 > (CloudFront + ACM) would be required — out of scope for this lab.
@@ -70,7 +72,7 @@ terraform apply
 Direct S3 endpoint (available immediately after apply):
 
 ```
-http://hw-pzt-site.s3-website.eu-north-1.amazonaws.com/
+http://hwbarabash1.pp.ua.s3-website.eu-north-1.amazonaws.com/
 ```
 
 ### 4. Attach the domain hwbarabash1.pp.ua (manual)
@@ -81,7 +83,7 @@ Then **Name Servers (NS) → gear → DNS records → Change → Add record**:
 
 | Type  | Name | Value                                              | TTL  |
 |-------|------|----------------------------------------------------|------|
-| CNAME | `@`  | `hw-pzt-site.s3-website.eu-north-1.amazonaws.com.` | 3600 |
+| CNAME | `@`  | `hwbarabash1.pp.ua.s3-website.eu-north-1.amazonaws.com.` | 3600 |
 
 > The trailing dot in the value is mandatory (absolute record), otherwise
 > nic.ua appends `hwbarabash1.pp.ua` to it and the record breaks.
@@ -96,12 +98,23 @@ terraform destroy
 
 | Output            | Description                                            |
 |-------------------|--------------------------------------------------------|
-| `bucket_id`       | Bucket name (`hw-pzt-site`)                            |
+| `bucket_id`       | Bucket name (`hwbarabash1.pp.ua`)                      |
 | `bucket_arn`      | Bucket ARN                                             |
 | `website_endpoint`| S3 website endpoint hostname                           |
 | `site_url`        | Full HTTP URL of the site                              |
 | `cname_name`      | DNS name to configure (`hwbarabash1.pp.ua`)            |
 | `cname_value`     | CNAME target for the registrar panel                   |
+
+## Limitations
+
+- **No access by bare IP address**: S3 website endpoints route every request by
+  the `Host` header (the bucket name is taken from it), and the endpoint IPs are
+  not static (they change between lookups, e.g. `3.5.216.102` → `3.5.218.145`).
+  Opening `http://<endpoint-ip>/` in a browser sends `Host: <ip>` and returns an
+  AWS error page instead of the site. Serving the site by a literal IP would
+  require an EC2 instance with an Elastic IP reverse-proxying to S3 — out of
+  scope for this lab (S3-only, no server).
+- **HTTP only**: website endpoints do not support TLS (see Security Notes).
 
 ## Security Notes
 

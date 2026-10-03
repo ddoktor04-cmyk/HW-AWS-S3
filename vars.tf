@@ -18,5 +18,5 @@ variable "aws_region" {
 variable "bucket_name" {
   type        = string
   description = "Globally unique S3 bucket name for the static website"
-  default     = "hw-pzt-site"
+  default     = "hwbarabash1.pp.ua"
 }
