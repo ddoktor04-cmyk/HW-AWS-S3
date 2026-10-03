@@ -1,7 +1,7 @@
-# AWS Terraform — Static Website on S3 (pzt.pp.ua)
+# AWS Terraform — Static Website on S3 (hwbarabash1.pp.ua)
 
 Infrastructure as Code (IaC) project: a **static website hosted on Amazon S3**
-using the S3 Static Website Hosting feature, published at `pzt.pp.ua`
+using the S3 Static Website Hosting feature, published at `hwbarabash1.pp.ua`
 via a CNAME record.
 
 ## Architecture
@@ -9,9 +9,9 @@ via a CNAME record.
 ```
         Internet
             |
-            |  HTTP (no certificate — S3 website endpoints are HTTP only)
+            |  HTTP (no certificate - S3 website endpoints are HTTP only)
             v
-   pzt.pp.ua  ──CNAME──>  hw-pzt-site.s3-website-eu-north-1.amazonaws.com
+ hwbarabash1.pp.ua ──CNAME──> hw-pzt-site.s3-website.eu-north-1.amazonaws.com
                                     |
                                     v
                           +---------------------+
@@ -26,7 +26,8 @@ via a CNAME record.
 - **S3 bucket** stores the site objects (`index.html`)
 - **Bucket policy** allows anonymous `s3:GetObject` (public read)
 - **Website configuration** serves `index.html` for both the index and error documents
-- **CNAME record** `pzt.pp.ua` → S3 website endpoint is added manually at the registrar (pp.ua / nic.ua panel), because Terraform cannot manage DNS outside AWS
+- **CNAME record** `hwbarabash1.pp.ua` → S3 website endpoint is added manually in
+  the nic.ua panel, because Terraform cannot manage DNS outside AWS
 
 > Note: S3 website endpoints support **HTTP only**. For HTTPS a certificate
 > (CloudFront + ACM) would be required — out of scope for this lab.
@@ -69,18 +70,21 @@ terraform apply
 Direct S3 endpoint (available immediately after apply):
 
 ```
-http://hw-pzt-site.s3-website-eu-north-1.amazonaws.com/
+http://hw-pzt-site.s3-website.eu-north-1.amazonaws.com/
 ```
 
-### 4. Attach the domain pzt.pp.ua (manual)
+### 4. Attach the domain hwbarabash1.pp.ua (manual)
 
-Run `terraform output` and add a record in the registrar's DNS panel:
+In the nic.ua panel: **Domains → `hwbarabash1.pp.ua` → gear → NS servers →
+"NIC.UA Name Servers" → Change NS** (parked NS cannot hold custom records).
+Then **Name Servers (NS) → gear → DNS records → Change → Add record**:
 
-| Type  | Name       | Value                                             | TTL  |
-|-------|------------|---------------------------------------------------|------|
-| CNAME | `pzt`      | `hw-pzt-site.s3-website-eu-north-1.amazonaws.com` | 3600 |
+| Type  | Name | Value                                              | TTL  |
+|-------|------|----------------------------------------------------|------|
+| CNAME | `@`  | `hw-pzt-site.s3-website.eu-north-1.amazonaws.com.` | 3600 |
 
-> The `pzt` name is relative to the `pp.ua` zone, so the full record is `pzt.pp.ua`.
+> The trailing dot in the value is mandatory (absolute record), otherwise
+> nic.ua appends `hwbarabash1.pp.ua` to it and the record breaks.
 
 ### 5. Tear down
 
@@ -96,7 +100,7 @@ terraform destroy
 | `bucket_arn`      | Bucket ARN                                             |
 | `website_endpoint`| S3 website endpoint hostname                           |
 | `site_url`        | Full HTTP URL of the site                              |
-| `cname_name`      | DNS name to configure (`pzt.pp.ua`)                    |
+| `cname_name`      | DNS name to configure (`hwbarabash1.pp.ua`)            |
 | `cname_value`     | CNAME target for the registrar panel                   |
 
 ## Security Notes

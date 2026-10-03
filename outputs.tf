@@ -20,7 +20,7 @@ output "site_url" {
 
 output "cname_name" {
   description = "DNS name to point at the S3 website endpoint (add manually at the registrar)"
-  value       = "pzt.pp.ua"
+  value       = "hwbarabash1.pp.ua"
 }
 
 output "cname_value" {
