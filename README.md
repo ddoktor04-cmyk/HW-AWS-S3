@@ -82,11 +82,11 @@ the [nic.ua](https://nic.ua) panel.
 
 #### Step 1 — Switch to the NIC.UA name servers
 
-1. nic.ua → **Domains** (`Мои домены`) → `hwbarabash1.pp.ua` → **gear icon** →
-   **NS servers** (`NS-серверы`)
-2. Choose **«Серверы имен NIC.UA»** (the domain becomes delegated to the NIC.UA
+1. nic.ua → **Domains** (`Мої домени`) → `hwbarabash1.pp.ua` → **gear icon** →
+   **NS servers** (`NS-сервери`)
+2. Choose **«Сервери імен NIC.UA»** (the domain becomes delegated to the NIC.UA
    name servers `ns10.uadns.com`, `ns11.uadns.com`, `ns12.uadns.com`)
-3. Press **Change NS** (`Изменить NS`)
+3. Press **Change NS** (`Змінити NS`)
 
 While the domain sits on the *parked* name servers (`parked1/2.uadns.com`) it
 serves the nic.ua parking page and **ignores the records below** — the NS change
